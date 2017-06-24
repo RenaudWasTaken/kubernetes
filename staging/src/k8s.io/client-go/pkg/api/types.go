@@ -3105,6 +3105,8 @@ const (
 	ResourceStorageScratch ResourceName = "storage.kubernetes.io/scratch"
 	// NVIDIA GPU, in devices. Alpha, might change: although fractional and allowing values >1, only one whole device per node is assigned.
 	ResourceNvidiaGPU ResourceName = "alpha.kubernetes.io/nvidia-gpu"
+        // Solarflare NIC, in devices.
+        ResourceSolarflareNIC ResourceName = "alpha.kubernetes.io/solarflare-nic"
 	// Number of Pods that may be running on this Node: see ResourcePods
 )
 

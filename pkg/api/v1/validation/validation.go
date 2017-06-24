@@ -49,6 +49,8 @@ func ValidateResourceRequirements(requirements *v1.ResourceRequirements, fldPath
 			// For GPUs, not only requests can't exceed limits, they also can't be lower, i.e. must be equal.
 			if resourceName == v1.ResourceNvidiaGPU && quantity.Cmp(requestQuantity) != 0 {
 				allErrs = append(allErrs, field.Invalid(reqPath, requestQuantity.String(), fmt.Sprintf("must be equal to %s limit", v1.ResourceNvidiaGPU)))
+                        } else if resourceName == v1.ResourceSolarflareNIC && quantity.Cmp(requestQuantity) != 0 {
+                                allErrs = append(allErrs, field.Invalid(reqPath, requestQuantity.String(), fmt.Sprintf("must be equal to %s limit", v1.ResourceSolarflareNIC)))
 			} else if quantity.Cmp(requestQuantity) < 0 {
 				allErrs = append(allErrs, field.Invalid(limPath, quantity.String(), fmt.Sprintf("must be greater than or equal to %s request", resourceName)))
 			}

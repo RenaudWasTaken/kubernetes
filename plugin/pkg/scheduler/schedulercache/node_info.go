@@ -69,6 +69,7 @@ type Resource struct {
 	MilliCPU           int64
 	Memory             int64
 	NvidiaGPU          int64
+        SolarflareNIC      int64
 	StorageScratch     int64
 	StorageOverlay     int64
 	OpaqueIntResources map[v1.ResourceName]int64
@@ -79,6 +80,7 @@ func (r *Resource) ResourceList() v1.ResourceList {
 		v1.ResourceCPU:            *resource.NewMilliQuantity(r.MilliCPU, resource.DecimalSI),
 		v1.ResourceMemory:         *resource.NewQuantity(r.Memory, resource.BinarySI),
 		v1.ResourceNvidiaGPU:      *resource.NewQuantity(r.NvidiaGPU, resource.DecimalSI),
+                v1.ResourceSolarflareNIC:      *resource.NewQuantity(r.SolarflareNIC, resource.DecimalSI),
 		v1.ResourceStorageOverlay: *resource.NewQuantity(r.StorageOverlay, resource.BinarySI),
 	}
 	for rName, rQuant := range r.OpaqueIntResources {
@@ -92,6 +94,7 @@ func (r *Resource) Clone() *Resource {
 		MilliCPU:       r.MilliCPU,
 		Memory:         r.Memory,
 		NvidiaGPU:      r.NvidiaGPU,
+                SolarflareNIC:  r.SolarflareNIC,
 		StorageOverlay: r.StorageOverlay,
 		StorageScratch: r.StorageScratch,
 	}
@@ -267,6 +270,7 @@ func (n *NodeInfo) addPod(pod *v1.Pod) {
 	n.requestedResource.MilliCPU += res.MilliCPU
 	n.requestedResource.Memory += res.Memory
 	n.requestedResource.NvidiaGPU += res.NvidiaGPU
+        n.requestedResource.SolarflareNIC += res.SolarflareNIC
 	n.requestedResource.StorageOverlay += res.StorageOverlay
 	n.requestedResource.StorageScratch += res.StorageScratch
 	if n.requestedResource.OpaqueIntResources == nil && len(res.OpaqueIntResources) > 0 {
@@ -324,6 +328,7 @@ func (n *NodeInfo) removePod(pod *v1.Pod) error {
 			n.requestedResource.MilliCPU -= res.MilliCPU
 			n.requestedResource.Memory -= res.Memory
 			n.requestedResource.NvidiaGPU -= res.NvidiaGPU
+                        n.requestedResource.SolarflareNIC -= res.SolarflareNIC
 			if len(res.OpaqueIntResources) > 0 && n.requestedResource.OpaqueIntResources == nil {
 				n.requestedResource.OpaqueIntResources = map[v1.ResourceName]int64{}
 			}
@@ -354,6 +359,8 @@ func calculateResource(pod *v1.Pod) (res Resource, non0_cpu int64, non0_mem int6
 				res.Memory += rQuant.Value()
 			case v1.ResourceNvidiaGPU:
 				res.NvidiaGPU += rQuant.Value()
+                        case v1.ResourceSolarflareNIC:
+                                res.SolarflareNIC += rQuant.Value()
 			case v1.ResourceStorageOverlay:
 				res.StorageOverlay += rQuant.Value()
 			default:
@@ -405,6 +412,8 @@ func (n *NodeInfo) SetNode(node *v1.Node) error {
 			n.allocatableResource.Memory = rQuant.Value()
 		case v1.ResourceNvidiaGPU:
 			n.allocatableResource.NvidiaGPU = rQuant.Value()
+                case v1.ResourceSolarflareNIC:
+                        n.allocatableResource.SolarflareNIC = rQuant.Value()
 		case v1.ResourcePods:
 			n.allowedPodNumber = int(rQuant.Value())
 		case v1.ResourceStorage:

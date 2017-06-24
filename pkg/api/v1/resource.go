@@ -55,6 +55,13 @@ func (self *ResourceList) NvidiaGPU() *resource.Quantity {
 	return &resource.Quantity{}
 }
 
+func (self *ResourceList) SolarflareNIC() *resource.Quantity {
+  if val, ok := (*self)[ResourceSolarflareNIC]; ok {
+    return &val
+  }
+  return &resource.Quantity{}
+}
+
 func (self *ResourceList) StorageOverlay() *resource.Quantity {
 	if val, ok := (*self)[ResourceStorageOverlay]; ok {
 		return &val

@@ -131,6 +131,8 @@ func IsDevice(k v1.ResourceName) (bool, string) {
 	var name string
 	if k == v1.ResourceNvidiaGPU {
 		name = "nvidia-gpu"
+        } else if k == v1.ResourceSolarflareNIC {
+                name = "solarflare-nic"
 	} else {
 		name = strings.TrimPrefix(key, v1.ResourceOpaqueIntPrefix)
 	}
