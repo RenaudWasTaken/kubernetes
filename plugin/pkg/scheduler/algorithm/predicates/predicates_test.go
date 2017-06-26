@@ -79,6 +79,7 @@ var (
 )
 
 func makeResources(milliCPU, memory, nvidiaGPUs, pods, opaqueA, storage int64) v1.NodeResources {
+//Solarflare NIC - todo
 	return v1.NodeResources{
 		Capacity: v1.ResourceList{
 			v1.ResourceCPU:       *resource.NewMilliQuantity(milliCPU, resource.DecimalSI),

@@ -521,6 +521,8 @@ func addResource(r *Resource, rl v1.ResourceList) {
 			r.Memory += rQuant.Value()
 		case v1.ResourceNvidiaGPU:
 			r.NvidiaGPU += rQuant.Value()
+		case v1.ResourceSolarflareNIC:
+			r.ResourceSolarflareNIC += rQuant.Value()
 		default:
 			if v1helper.IsOpaqueIntResourceName(rName) {
 				r.AddOpaque(rName, rQuant.Value())

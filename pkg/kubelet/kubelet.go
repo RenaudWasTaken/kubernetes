@@ -78,6 +78,8 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/eviction"
 	"k8s.io/kubernetes/pkg/kubelet/gpu"
 	"k8s.io/kubernetes/pkg/kubelet/gpu/nvidia"
+        "k8s.io/kubernetes/pkg/kubelet/nic"
+        "k8s.io/kubernetes/pkg/kubelet/nic/solarflare"
 	"k8s.io/kubernetes/pkg/kubelet/images"
 	"k8s.io/kubernetes/pkg/kubelet/kuberuntime"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
@@ -819,6 +821,9 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 			if klet.gpuManager, err = nvidia.NewNvidiaGPUManager(klet, kubeDeps.DockerClient); err != nil {
 				return nil, err
 			}
+			if klet.nicManager, err = solarflare.NewSolarflareNICManager(klet, kubeDeps.DockerClient); err != nil {
+                                return nil, err
+      			}
 		} else {
 			glog.Errorf("Accelerators feature is supported with docker runtime only. Disabling this feature internally.")
 		}
@@ -1111,6 +1116,9 @@ type Kubelet struct {
 
 	// GPU Manager
 	gpuManager gpu.GPUManager
+     
+	// NIC Manager
+        nicManager nic.NICManager
 
 	// dockerLegacyService contains some legacy methods for backward compatibility.
 	// It should be set only when docker is using non json-file logging driver.

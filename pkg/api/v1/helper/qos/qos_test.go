@@ -43,6 +43,12 @@ func TestGetPodQOS(t *testing.T) {
 			}),
 			expected: v1.PodQOSGuaranteed,
 		},
+                {
+                        pod: newPod("guaranteed-with-nic", []v1.Container{
+                                newContainer("guaranteed", getResourceList("100m", "100Mi"), addResource("solarflare-nic", "2", getResourceList("100m", "100Mi"))),
+                        }),
+                        expected: v1.PodQOSGuaranteed,
+                },
 		{
 			pod: newPod("guaranteed-guaranteed", []v1.Container{
 				newContainer("guaranteed", getResourceList("100m", "100Mi"), getResourceList("100m", "100Mi")),
@@ -57,6 +63,13 @@ func TestGetPodQOS(t *testing.T) {
 			}),
 			expected: v1.PodQOSGuaranteed,
 		},
+                {
+                        pod: newPod("guaranteed-guaranteed-with-nic", []v1.Container{
+                                newContainer("guaranteed", getResourceList("100m", "100Mi"), addResource("solarflare-nic", "2", getResourceList("100m", "100Mi"))),
+                                newContainer("guaranteed", getResourceList("100m", "100Mi"), getResourceList("100m", "100Mi")),
+                        }),
+                        expected: v1.PodQOSGuaranteed,
+                },
 		{
 			pod: newPod("best-effort-best-effort", []v1.Container{
 				newContainer("best-effort", getResourceList("", ""), getResourceList("", "")),
@@ -87,6 +100,33 @@ func TestGetPodQOS(t *testing.T) {
 		{
 			pod: newPod("best-effort-guaranteed", []v1.Container{
 				newContainer("best-effort", getResourceList("", ""), addResource("nvidia-gpu", "2", getResourceList("", ""))),
+				newContainer("guaranteed", getResourceList("10m", "100Mi"), getResourceList("10m", "100Mi")),
+			}),
+			expected: v1.PodQOSBurstable,
+		},
+		{
+			pod: newPod("best-effort-best-effort-with-gpu", []v1.Container{
+				newContainer("best-effort", getResourceList("", ""), addResource("solarflare-nic", "2", getResourceList("", ""))),
+				newContainer("best-effort", getResourceList("", ""), getResourceList("", "")),
+			}),
+			expected: v1.PodQOSBestEffort,
+		},
+		{
+			pod: newPod("best-effort-with-gpu", []v1.Container{
+				newContainer("best-effort", getResourceList("", ""), addResource("solarflare-nic", "2", getResourceList("", ""))),
+			}),
+			expected: v1.PodQOSBestEffort,
+		},
+		{
+			pod: newPod("best-effort-burstable", []v1.Container{
+				newContainer("best-effort", getResourceList("", ""), addResource("solarflare-nic", "2", getResourceList("", ""))),
+				newContainer("burstable", getResourceList("1", ""), getResourceList("2", "")),
+			}),
+			expected: v1.PodQOSBurstable,
+		},
+		{
+			pod: newPod("best-effort-guaranteed", []v1.Container{
+				newContainer("best-effort", getResourceList("", ""), addResource("solarflare-nic", "2", getResourceList("", ""))),
 				newContainer("guaranteed", getResourceList("10m", "100Mi"), getResourceList("10m", "100Mi")),
 			}),
 			expected: v1.PodQOSBurstable,

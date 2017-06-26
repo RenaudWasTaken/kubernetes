@@ -560,6 +560,8 @@ func (kl *Kubelet) setNodeStatusMachineInfo(node *v1.Node) {
 		var key v1.ResourceName
 		if k == "nvidia-gpu" {
 			key = v1.ResourceNvidiaGPU
+		} else if k == "solarflare-nic" {
+			key = v1.ResourceSolarflareNIC
 		} else {
 			key = v1.ResourceName(v1.ResourceOpaqueIntPrefix + k)
 		}

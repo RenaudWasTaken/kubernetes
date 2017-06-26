@@ -510,6 +510,8 @@ func GetResourceRequest(pod *v1.Pod) *schedulercache.Resource {
 				result.MilliCPU += rQuantity.MilliValue()
 			case v1.ResourceNvidiaGPU:
 				result.NvidiaGPU += rQuantity.Value()
+                        case v1.ResourceSolarflareNIC:
+                                result.SolarflareNIC += rQuantity.Value()
 			case v1.ResourceStorageOverlay:
 				result.StorageOverlay += rQuantity.Value()
 			default:
@@ -544,6 +546,10 @@ func GetResourceRequest(pod *v1.Pod) *schedulercache.Resource {
 				if gpu := rQuantity.Value(); gpu > result.NvidiaGPU {
 					result.NvidiaGPU = gpu
 				}
+                        case v1.ResourceSolarflareNIC:
+                                if nic := rQuantity.Value(); nic > result.SolarflareNIC {
+                                        result.SolarflareNIC = nic
+                                }
 			case v1.ResourceStorageOverlay:
 				if overlay := rQuantity.Value(); overlay > result.StorageOverlay {
 					result.StorageOverlay = overlay
@@ -598,6 +604,9 @@ func PodFitsResources(pod *v1.Pod, meta interface{}, nodeInfo *schedulercache.No
 	if allocatable.NvidiaGPU < podRequest.NvidiaGPU+nodeInfo.RequestedResource().NvidiaGPU {
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceNvidiaGPU, podRequest.NvidiaGPU, nodeInfo.RequestedResource().NvidiaGPU, allocatable.NvidiaGPU))
 	}
+        if allocatable.SolarflareNIC < podRequest.SolarflareNIC+nodeInfo.RequestedResource().SolarflareNIC {
+                predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceSolarflareNIC, podRequest.SolarflareNIC, nodeInfo.RequestedResource().SolarflareNIC, allocatable.SolarflareNIC))
+        }
 
 	scratchSpaceRequest := podRequest.StorageScratch
 	if allocatable.StorageOverlay == 0 {

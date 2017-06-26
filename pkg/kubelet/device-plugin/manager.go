@@ -125,12 +125,17 @@ func (m *Manager) deleteDevices(kind string) {
 
 func IsDevice(k v1.ResourceName) (bool, string) {
 	key := string(k)
-	if k != v1.ResourceNvidiaGPU && !strings.HasPrefix(key, v1.ResourceOpaqueIntPrefix) {
-		return false, ""
-	}
+        if k != v1.ResourceNvidiaGPU && k != v1.ResourceSolarflareNIC {
+               return false, ""
+        }
+        if !strings.HasPrefix(key, v1.ResourceOpaqueIntPrefix) {
+                return false, ""
+        }
 	var name string
 	if k == v1.ResourceNvidiaGPU {
 		name = "nvidia-gpu"
+        } else if k == v1.ResourceSolarflareNIC {
+                name = "solarflare-nic"
 	} else {
 		name = strings.TrimPrefix(key, v1.ResourceOpaqueIntPrefix)
 	}

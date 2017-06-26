@@ -89,6 +89,7 @@ func (kl *Kubelet) GetActivePods() []*v1.Pod {
 // makeDevices determines the devices for the given container.
 // Experimental.
 func (kl *Kubelet) makeDevices(pod *v1.Pod, container *v1.Container) ([]kubecontainer.DeviceInfo, error) {
+//solarflare nic todo
 	if container.Resources.Limits.NvidiaGPU().IsZero() {
 		return nil, nil
 	}
