@@ -17,15 +17,21 @@ limitations under the License.
 package deviceplugin
 
 import (
+	"log"
 	"net"
 	"os"
 	//"strconv"
-	"io/ioutil"
-	"strings"
 	"testing"
 	"time"
+        "os/exec"
+        "bytes"
+        //"syscall"
+        "fmt"
+        //"strconv"
+        "strings"
+        "io/ioutil"
 
-	"github.com/golang/glog"
+  	"github.com/golang/glog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
@@ -36,101 +42,118 @@ import (
 
 const (
 	DeviceSock1 = "device.sock.solarflare.nic"
-	ServerSock1 = pluginapi.DevicePluginPath + DeviceSock1
+	ServerSock1   = pluginapi.DevicePluginPath + DeviceSock1
 )
-
-var discovered = 0
 
 type DevicePluginServer1 struct {
 }
 
 func (d *DevicePluginServer1) Init(ctx context.Context, e *pluginapi.Empty) (*pluginapi.Empty, error) {
-	glog.Errorf("ramki: Init\n")
+
+	glog.Errorf("ramki: Init\n");
+
+	os.Chdir("/root")
+
+	cmd1 := exec.Command("yum", "-y", "install", "gcc", "make", "libc", "libc-devel", "perl", "autoconf", "automake", "libtool", "kernel‐devel", "binutils", "gettext", "gawk", "gcc", "sed", "make", "bash", "glibc-common", "automake", "libtool", "libpcap", "libpcap-devel", "python-devel", "glibc‐devel.i586") 
+	cmdOutput1 := &bytes.Buffer{}
+	cmd1.Stdout = cmdOutput1
+	err1 := cmd1.Run()
+	if err1 != nil {
+	  os.Stderr.WriteString(err1.Error())
+	}
+	fmt.Print(string(cmdOutput1.Bytes()))
+
 	return nil, nil
 }
 
 func (d *DevicePluginServer1) Stop(ctx context.Context, e *pluginapi.Empty) (*pluginapi.Empty, error) {
-	glog.Errorf("ramki: Stop\n")
 	return nil, nil
 }
 
 func (d *DevicePluginServer1) Discover(e *pluginapi.Empty, deviceStream pluginapi.DeviceManager_DiscoverServer) error {
-	glog.Errorf("ramki: Discover\n")
 
-	// read the whole file at once
-	//b, err := ioutil.ReadFile("/proc/devices")
-	b, err := ioutil.ReadFile("/proc/devices")
-	if err != nil {
-		panic(err)
-	}
-	s := string(b)
+	glog.Errorf("ramki: Discover\n");
 
-	if strings.Index(s, "sfc_char") > 0 {
+        // read the whole file at once
+    	b, err := ioutil.ReadFile("/proc/devices")
+    	if err != nil {
+        	panic(err)
+    	}
+    	s := string(b)
+
+    	if (strings.Index(s, "sfc_char") > 0) {
 		deviceStream.Send(&pluginapi.Device{
 			Name:       "/dev/sfc_char",
-			Kind:       "device",
-			Vendor:     "device",
+			Kind:       DeviceKind,
+			Vendor:     DeviceVendor,
 			Properties: nil,
 		})
+    	}
 
-		discovered++
-	}
-
-	if strings.Index(s, "sfc_affinity") > 0 {
+	if (strings.Index(s, "sfc_affinity") > 0) {
 		deviceStream.Send(&pluginapi.Device{
 			Name:       "/dev/sfc_affnity",
-			Kind:       "device",
-			Vendor:     "device",
+			Kind:       DeviceKind,
+			Vendor:     DeviceVendor,
 			Properties: nil,
 		})
-
-		discovered++
 	}
 
-	if strings.Index(s, "onload_epoll") > 0 {
+	if (strings.Index(s, "onload_epoll") > 0) {
 		deviceStream.Send(&pluginapi.Device{
 			Name:       "/dev/onload_epoll",
-			Kind:       "device",
-			Vendor:     "device",
+			Kind:       DeviceKind,
+			Vendor:     DeviceVendor,
 			Properties: nil,
 		})
-
-		discovered++
 	}
 
-	if strings.Index(s, "onload_cplane") > 0 {
+	if (strings.Index(s, "onload_cplane") > 0) {
 		deviceStream.Send(&pluginapi.Device{
 			Name:       "/dev/onload_cplane",
-			Kind:       "device",
-			Vendor:     "device",
+			Kind:       DeviceKind,
+			Vendor:     DeviceVendor,
 			Properties: nil,
 		})
-
-		discovered++
 	}
 
 	// '\n' is added to avoid a match with onload_cplane and onload_epoll
-	if strings.Index(s, "onload\n") > 0 {
+	if (strings.Index(s, "onload\n") > 0) {
 		deviceStream.Send(&pluginapi.Device{
 			Name:       "/dev/onload",
-			Kind:       "device",
-			Vendor:     "device",
+			Kind:       DeviceKind,
+			Vendor:     DeviceVendor,
 			Properties: nil,
 		})
-
-		discovered++
 	}
 
 	return nil
 }
 
 func (d *DevicePluginServer1) Monitor(e *pluginapi.Empty, deviceStream pluginapi.DeviceManager_MonitorServer) error {
-	return nil
+	for {
+		select {
+		case d := <-deviceErrorChan:
+			time.Sleep(WaitToKill * time.Second)
+
+			err := deviceStream.Send(&pluginapi.DeviceHealth{
+				Name:   d.Name,
+				Kind:   d.Kind,
+				Vendor: DeviceVendor,
+				Health: pluginapi.Unhealthy,
+			})
+
+			if err != nil {
+				log.Println("error while monitoring: %+v", err)
+			}
+		}
+
+		time.Sleep(time.Second)
+	}
 }
 
 func (d *DevicePluginServer1) Allocate(ctx context.Context, r *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 
-	glog.Errorf("ramki: Allocate\n")
 	var response pluginapi.AllocateResponse
 	response.Envs = append(response.Envs, &pluginapi.KeyValue{
 		Key:   "TEST_ENV_VAR",
@@ -144,18 +167,18 @@ func (d *DevicePluginServer1) Allocate(ctx context.Context, r *pluginapi.Allocat
 		ReadOnly:  false,
 	})
 
+	deviceErrorChan <- r.Devices[0]
+
 	return &response, nil
 }
 
 func (d *DevicePluginServer1) Deallocate(ctx context.Context, r *pluginapi.DeallocateRequest) (*pluginapi.Error, error) {
-	glog.Errorf("ramki: Deallocate\n")
 	return &pluginapi.Error{}, nil
 }
 
 func StartDevicePluginServer1(t *testing.T) {
-	glog.Errorf("ramki: StartDevicePluginServer:%s", ServerSock1)
-	os.Remove(ServerSock1)
-	sock, err := net.Listen("unix", ServerSock1)
+	os.Remove(ServerSock)
+	sock, err := net.Listen("unix", ServerSock)
 	require.NoError(t, err)
 
 	grpcServer := grpc.NewServer([]grpc.ServerOption{}...)
@@ -165,7 +188,6 @@ func StartDevicePluginServer1(t *testing.T) {
 }
 
 func DialRegistery1(t *testing.T) {
-	glog.Errorf("ramki: DialRegistery\n")
 	c, err := grpc.Dial(pluginapi.KubeletSocket, grpc.WithInsecure(),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
@@ -177,40 +199,50 @@ func DialRegistery1(t *testing.T) {
 	client := pluginapi.NewPluginRegistrationClient(c)
 	resp, err := client.Register(context.Background(), &pluginapi.RegisterRequest{
 		Version:    pluginapi.Version,
-		Unixsocket: DeviceSock1,
-		Vendor:     "device",
+		Unixsocket: DeviceSock,
+		Vendor:     DeviceVendor,
 	})
 
-	glog.Errorf("resp: %+v", resp)
 	require.Len(t, resp.Error, 0)
 	require.NoError(t, err)
 	c.Close()
 }
 
-func TestManager1(t *testing.T) {
+func monitorCallback1(d *pluginapi.Device) {
+}
 
-	glog.Errorf("ramki: TestManager\n")
-	mgr, err := NewManager(monitorCallback)
+func TestManager1(t *testing.T) {
+	mgr, err := NewManager(monitorCallback1)
 	require.NoError(t, err)
 
 	StartDevicePluginServer1(t)
 	DialRegistery1(t)
 
-	//assert.Len(t, mgr.Devices()["device"], 2)
+	if (mgr.Devices()["device"] != nil) {
 
-	if discovered == 0 {
-		return
+		assert.Len(t, mgr.Devices()["device"], 5)
+
+		glog.Errorf("ramki: TestManager1 - Solarflare NIC present\n");
+
+		devs, resp, err := mgr.Allocate("device", 1)
+
+		require.NoError(t, err)
+		assert.Len(t, resp[0].Envs, 1)
+		assert.Len(t, resp[0].Mounts, 1)
+		assert.Len(t, devs, 1)
+
+		assert.Len(t, mgr.Available()["device"], 4)
+
+		mgr.Deallocate(devs)
+		assert.Len(t, mgr.Available()["device"], 5)
+
+		time.Sleep((WaitToKill + 1) * time.Second)
+		unhealthyDev := devs[0]
+
+		devs = mgr.Devices()[DeviceKind]
+		i, ok := hasDevice(unhealthyDev, devs)
+
+		assert.True(t, ok)
+		assert.Equal(t, pluginapi.Unhealthy, devs[i].Health)
 	}
-
-	devs, resp, err := mgr.Allocate("device", 1)
-
-	require.NoError(t, err)
-	assert.Len(t, resp[0].Envs, 1)
-	assert.Len(t, resp[0].Mounts, 1)
-	assert.Len(t, devs, 1)
-
-	//assert.Len(t, mgr.Available()["device"], 1)
-
-	mgr.Deallocate(devs)
-	//assert.Len(t, mgr.Available()["device"], 2)
 }
