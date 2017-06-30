@@ -195,6 +195,7 @@ func (d *DevicePluginServer1) Discover(e *pluginapi.Empty, deviceStream pluginap
 func (d *DevicePluginServer1) Monitor(e *pluginapi.Empty, deviceStream pluginapi.DeviceManager_MonitorServer) error {
 	for {
 		select {
+
 		case d := <-deviceErrorChan1:
 			glog.Errorf("ramki: Monitor\n")
 
