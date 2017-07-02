@@ -153,8 +153,8 @@ func (d *DevicePluginServer1) Init(ctx context.Context, e *pluginapi.Empty) (*pl
 			fmt.Println("CMD--" + cmdName + ": " + "Install complete")
 
 			// reload onload
-			cmdName = "/usr/sbin/onload_tool unload"
-			cmd = exec.Command(cmdName)
+			cmdName = "onload_tool unload"
+			cmd = exec.Command("onload_tool", "unload")
 			cmd.Stdout = &out
 			cmd.Stderr = &stderr
 			err = cmd.Run()
@@ -162,7 +162,17 @@ func (d *DevicePluginServer1) Init(ctx context.Context, e *pluginapi.Empty) (*pl
 				fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
 			}
 			//fmt.Println("CMD--" + cmdName + ": " + out.String())
-			cmdName = "/usr/sbin/onload_tool reload"
+			cmdName = "onload_tool reload"
+			cmd = exec.Command("onload_tool", "reload")
+			cmd.Stdout = &out
+			cmd.Stderr = &stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+			}
+			//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+			cmdName = "onload"
 			cmd = exec.Command(cmdName)
 			cmd.Stdout = &out
 			cmd.Stderr = &stderr
@@ -172,17 +182,7 @@ func (d *DevicePluginServer1) Init(ctx context.Context, e *pluginapi.Empty) (*pl
 			}
 			//fmt.Println("CMD--" + cmdName + ": " + out.String())
 
-			cmdName = "/usr/bin/onload"
-			cmd = exec.Command(cmdName)
-			cmd.Stdout = &out
-			cmd.Stderr = &stderr
-			err = cmd.Run()
-			if err != nil {
-				fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
-			}
-			//fmt.Println("CMD--" + cmdName + ": " + out.String())
-
-			if (strings.Contains(out.String(), "Solarflare Communications") && strings.Contains(out.String(), onloadver)) {
+			if (strings.Contains(stderr.String(), "Solarflare Communications") && strings.Contains(stderr.String(), onloadver)) {
 				fmt.Println("Onload Install Verified\n")
 			}
 		} else {
