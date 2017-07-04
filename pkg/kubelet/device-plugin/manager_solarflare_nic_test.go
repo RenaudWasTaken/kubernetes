@@ -90,8 +90,17 @@ func (d *DevicePluginServer1) Init(ctx context.Context, e *pluginapi.Empty) (*pl
 		//fmt.Println("CMD--" + cmdName + ": " + out.String())
 
 		os.Chdir(os.Getenv("HOME"))
-		// uninstall current onload
-		cmdName = "./openonload-" + onloadver + "/scripts/onload_misc/onload_uninstall"
+		// unload and uninstall current onload
+		cmdName = "onload_tool unload"
+		cmd = exec.Command("onload_tool", "unload")
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		//fmt.Println("CMD--" + cmdName + ": " + out.String())
+		cmdName = "onload_uninstall"
 		cmd = exec.Command(cmdName)
 		cmd.Stdout = &out
 		cmd.Stderr = &stderr
@@ -183,7 +192,21 @@ func (d *DevicePluginServer1) Init(ctx context.Context, e *pluginapi.Empty) (*pl
 			//fmt.Println("CMD--" + cmdName + ": " + out.String())
 
 			if (strings.Contains(stderr.String(), "Solarflare Communications") && strings.Contains(stderr.String(), onloadver)) {
-				fmt.Println("Onload Install Verified\n")
+				cmdName = "/sbin/ldconfig"
+				cmd = exec.Command(cmdName, "-N", "-v")
+				cmd.Stdout = &out
+				cmd.Stderr = &stderr
+				err = cmd.Run()
+				if err != nil {
+					fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+				}
+				//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+				if (strings.Contains(out.String(), "libonload")) {
+					fmt.Println("Onload Install Verified\n")
+				} else { 
+					return nil, nil
+				}
 			}
 		} else {
 			return nil, nil
@@ -292,8 +315,8 @@ func (d *DevicePluginServer1) Allocate(ctx context.Context, r *pluginapi.Allocat
 
 	var response pluginapi.AllocateResponse
 	response.Envs = append(response.Envs, &pluginapi.KeyValue{
-		Key:   "TEST_ENV_VAR",
-		Value: "FOO",
+		Key:   "LD_PRELOAD",
+		Value: "libonload.so",
 	})
 
 	response.Mounts = append(response.Mounts, &pluginapi.Mount{
