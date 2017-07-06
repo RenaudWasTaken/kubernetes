@@ -23,10 +23,10 @@ import (
 	//"strconv"
 	"testing"
 	"time"
-        //"os/exec"
-        //"bytes"
+        "os/exec"
+        "bytes"
         //"syscall"
-        //"fmt"
+        "fmt"
         //"strconv"
         "strings"
         "io/ioutil"
@@ -49,25 +49,173 @@ const (
 	WaitToKill1 = 3
 )
 
+var (
+	deviceErrorChan1 = make(chan *pluginapi.Device)
+)
+
 type DevicePluginServer1 struct {
 }
 
 func (d *DevicePluginServer1) Init(ctx context.Context, e *pluginapi.Empty) (*pluginapi.Empty, error) {
 
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	onloadver := "201606-u1.3"
+
 	glog.Errorf("ramki: Init\n");
 
-/*
-	os.Chdir("/root")
-
-	cmd1 := exec.Command("yum", "-y", "install", "gcc", "make", "libc", "libc-devel", "perl", "autoconf", "automake", "libtool", "kernel‐devel", "binutils", "gettext", "gawk", "gcc", "sed", "make", "bash", "glibc-common", "automake", "libtool", "libpcap", "libpcap-devel", "python-devel", "glibc‐devel.i586") 
-	cmdOutput1 := &bytes.Buffer{}
-	cmd1.Stdout = cmdOutput1
-	err1 := cmd1.Run()
-	if err1 != nil {
-	  os.Stderr.WriteString(err1.Error())
+	cmdName := "yum"
+	cmdArgs := []string{}
+	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
 	}
-	fmt.Print(string(cmdOutput1.Bytes()))
-*/
+	//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+	// if yum not found, abort and return error
+	if ((err != nil) && strings.Contains(stderr.String(), "not found") == false) { 
+		// install onload dependencies
+		cmdName = "yum"
+		cmd = exec.Command(cmdName, "-y", "install", "gcc", "make", "libc", "libc-devel", "perl", "autoconf", "automake", "libtool", "kernel‐devel", "binutils", "gettext", "gawk", "gcc", "sed", "make", "bash", "glibc-common", "automake", "libtool", "libpcap", "libpcap-devel", "python-devel", "glibc‐devel.i586") 
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+		os.Chdir(os.Getenv("HOME"))
+		// unload and uninstall current onload
+		cmdName = "onload_tool unload"
+		cmd = exec.Command("onload_tool", "unload")
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		//fmt.Println("CMD--" + cmdName + ": " + out.String())
+		cmdName = "onload_uninstall"
+		cmd = exec.Command(cmdName)
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+		os.Chdir(os.Getenv("HOME"))
+		// remove current onload
+		cmdName = "rm onload"
+		cmd = exec.Command("/bin/sh", "-c", "rm -rf ./openonload*")
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+		os.Chdir(os.Getenv("HOME"))
+		// get open onload from a authorized source - further security todo
+		cmdName = "get onload"
+		cmdstring := "http://www.openonload.org/download/openonload-" + onloadver + ".tgz"
+		cmd = exec.Command("wget", cmdstring) 
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+		os.Chdir(os.Getenv("HOME"))
+		// unzip onload
+		cmdName = "unzip onload"
+		cmdstring = "./openonload-" + onloadver + ".tgz"
+		cmd = exec.Command("tar", "xvzf", cmdstring)
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+		os.Chdir(os.Getenv("HOME"))
+		// install current onload
+		cmdName = "./openonload-" + onloadver + "/scripts/onload_install"
+		cmd = exec.Command(cmdName)
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+		}
+		if ((err == nil) && strings.Contains(out.String(), "onload_install: Install complete")) {
+			fmt.Println("CMD--" + cmdName + ": " + "Install complete")
+
+			// reload onload
+			cmdName = "onload_tool unload"
+			cmd = exec.Command("onload_tool", "unload")
+			cmd.Stdout = &out
+			cmd.Stderr = &stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+			}
+			//fmt.Println("CMD--" + cmdName + ": " + out.String())
+			cmdName = "onload_tool reload"
+			cmd = exec.Command("onload_tool", "reload")
+			cmd.Stdout = &out
+			cmd.Stderr = &stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+			}
+			//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+			cmdName = "onload"
+			cmd = exec.Command(cmdName)
+			cmd.Stdout = &out
+			cmd.Stderr = &stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+			}
+			//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+			if (strings.Contains(stderr.String(), "Solarflare Communications") && strings.Contains(stderr.String(), onloadver)) {
+				cmdName = "/sbin/ldconfig"
+				cmd = exec.Command(cmdName, "-N", "-v")
+				cmd.Stdout = &out
+				cmd.Stderr = &stderr
+				err = cmd.Run()
+				if err != nil {
+					fmt.Println("CMD--" + cmdName + ": " + fmt.Sprint(err) + ": " + stderr.String())
+				}
+				//fmt.Println("CMD--" + cmdName + ": " + out.String())
+
+				if (strings.Contains(out.String(), "libonload")) {
+					fmt.Println("Onload Install Verified\n")
+				} else { 
+					return nil, nil
+				}
+			}
+		} else {
+			return nil, nil
+		}
+
+	} else {
+		//Init fails with error - todo
+		return nil, nil
+	}
 
 	return nil, nil
 }
@@ -139,7 +287,8 @@ func (d *DevicePluginServer1) Discover(e *pluginapi.Empty, deviceStream pluginap
 func (d *DevicePluginServer1) Monitor(e *pluginapi.Empty, deviceStream pluginapi.DeviceManager_MonitorServer) error {
 	for {
 		select {
-		case d := <-deviceErrorChan:
+
+		case d := <-deviceErrorChan1:
 			glog.Errorf("ramki: Monitor\n")
 
 			time.Sleep(WaitToKill1 * time.Second)
@@ -166,8 +315,8 @@ func (d *DevicePluginServer1) Allocate(ctx context.Context, r *pluginapi.Allocat
 
 	var response pluginapi.AllocateResponse
 	response.Envs = append(response.Envs, &pluginapi.KeyValue{
-		Key:   "TEST_ENV_VAR",
-		Value: "FOO",
+		Key:   "LD_PRELOAD",
+		Value: "libonload.so",
 	})
 
 	response.Mounts = append(response.Mounts, &pluginapi.Mount{
@@ -177,7 +326,7 @@ func (d *DevicePluginServer1) Allocate(ctx context.Context, r *pluginapi.Allocat
 		ReadOnly:  false,
 	})
 
-	deviceErrorChan <- r.Devices[0]
+	deviceErrorChan1 <- r.Devices[0]
 
 	return &response, nil
 }
@@ -246,7 +395,7 @@ func TestManager1(t *testing.T) {
 		mgr.Deallocate(devs)
 		assert.Len(t, mgr.Available()[DeviceKind1], 5)
 
-		time.Sleep((WaitToKill1 + 3) * time.Second)
+		time.Sleep((WaitToKill1 + 1) * time.Second)
 		unhealthyDev := devs[0]
 
 		devs = mgr.Devices()[DeviceKind1]
