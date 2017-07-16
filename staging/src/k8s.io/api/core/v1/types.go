@@ -1992,6 +1992,8 @@ type ContainerStatus struct {
 	// Container's ID in the format 'docker://<container_id>'.
 	// +optional
 	ContainerID string `json:"containerID,omitempty" protobuf:"bytes,8,opt,name=containerID"`
+
+	Devices []Device `json:"devices,omitempty" protobuf:"bytes,9,rep,name=devices"`
 }
 
 // PodPhase is a label for the condition of a pod at the current time.
@@ -3387,10 +3389,14 @@ type NodeStatus struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#capacity
 	// +optional
 	Capacity ResourceList `json:"capacity,omitempty" protobuf:"bytes,1,rep,name=capacity,casttype=ResourceList,castkey=ResourceName"`
+	// DevCapacity represents devices on a node.
+	// +optional
+	DevCapacity []Device `json:"devCapacity,omitempty" protobuf:"bytes,11,rep,name=devCapacity"`
 	// Allocatable represents the resources of a node that are available for scheduling.
 	// Defaults to Capacity.
 	// +optional
 	Allocatable ResourceList `json:"allocatable,omitempty" protobuf:"bytes,2,rep,name=allocatable,casttype=ResourceList,castkey=ResourceName"`
+
 	// NodePhase is the recently observed lifecycle phase of the node.
 	// More info: https://kubernetes.io/docs/concepts/nodes/node/#phase
 	// The field is never populated, and now is deprecated.
@@ -3586,6 +3592,21 @@ const (
 
 // ResourceList is a set of (resource name, quantity) pairs.
 type ResourceList map[ResourceName]resource.Quantity
+
+type DeviceHealthStatus string
+
+const (
+	DeviceHealthy   = "Healthy"
+	DeviceUnhealthy = "Unhealthy"
+)
+
+type Device struct {
+	Kind       string             `json:"kind" protobuf:"bytes,1,opt,name=kind"`
+	Vendor     string             `json:"vendor" protobuf:"bytes,2,opt,name=vendor"`
+	Name       string             `json:"name" protobuf:"bytes,3,opt,name=name"`
+	Health     DeviceHealthStatus `json:"health" protobuf:"bytes,4,opt,name=health"`
+	Properties map[string]string  `json:"properties" protobuf:"bytes,5,opt,name=properties"`
+}
 
 // +genclient=true
 // +nonNamespaced=true

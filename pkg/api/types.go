@@ -1779,6 +1779,9 @@ type ContainerStatus struct {
 	ImageID      string
 	// +optional
 	ContainerID string
+
+	// +optional
+	Devices []Device
 }
 
 // PodPhase is a label for the condition of a pod at the current time.
@@ -2967,6 +2970,9 @@ type NodeStatus struct {
 	// Capacity represents the total resources of a node.
 	// +optional
 	Capacity ResourceList
+	// DevCapacity represents devices on a node.
+	// +optional
+	DevCapacity []Device
 	// Allocatable represents the resources of a node that are available for scheduling.
 	// +optional
 	Allocatable ResourceList
@@ -3149,6 +3155,25 @@ const (
 
 // ResourceList is a set of (resource name, quantity) pairs.
 type ResourceList map[ResourceName]resource.Quantity
+
+// DeviceHealthStatus is the health status of a device
+type DeviceHealthStatus string
+
+const (
+	// DeviceHealthy means that the device is healty
+	DeviceHealthy = "Healthy"
+	// DeviceUnhealthy means that the device is unhealty
+	DeviceUnhealthy = "Unhealthy"
+)
+
+// Device is the struct representing devices
+type Device struct {
+	Kind       string
+	Vendor     string
+	Name       string
+	Health     DeviceHealthStatus
+	Properties map[string]string
+}
 
 // +genclient=true
 // +nonNamespaced=true
