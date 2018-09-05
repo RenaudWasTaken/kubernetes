@@ -126,7 +126,7 @@ message AllocateResponse {
 }
 
 message ContainerAllocateResponse {
-  	// List of environment variable to be set in the container to access one of more devices.
+	// List of environment variable to be set in the container to access one of more devices.
 	map<string, string> envs = 1;
 	// Mounts for the container.
 	repeated Mount mounts = 2;
@@ -134,6 +134,8 @@ message ContainerAllocateResponse {
 	repeated DeviceSpec devices = 3;
 	// Container annotations to pass to the container runtime
 	map<string, string> annotations = 4;
+	// Prestart hook to be passed down directly to the OCI spec
+	string prestart_hook = 5;
 }
 
 // Mount specifies a host volume to mount into a container.
