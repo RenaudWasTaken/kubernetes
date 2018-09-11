@@ -620,10 +620,13 @@ func (cm *containerManagerImpl) GetResources(pod *v1.Pod, container *v1.Containe
 	} else if devOpts == nil {
 		return opts, nil
 	}
+
 	opts.Devices = append(opts.Devices, devOpts.Devices...)
 	opts.Mounts = append(opts.Mounts, devOpts.Mounts...)
 	opts.Envs = append(opts.Envs, devOpts.Envs...)
 	opts.Annotations = append(opts.Annotations, devOpts.Annotations...)
+	opts.PrestartHooks = append(opts.PrestartHooks, devOpts.PrestartHooks...)
+
 	return opts, nil
 }
 

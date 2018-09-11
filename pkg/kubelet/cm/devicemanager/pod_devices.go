@@ -268,6 +268,10 @@ func (pdev podDevices) deviceRunContainerOptions(podUID, contName string) *Devic
 			annotationsMap[k] = v
 			opts.Annotations = append(opts.Annotations, kubecontainer.Annotation{Name: k, Value: v})
 		}
+
+		if resp.PrestartHook != "" {
+			opts.PrestartHooks = append(opts.PrestartHooks, kubecontainer.PrestartHook(resp.PrestartHook))
+		}
 	}
 	return opts
 }

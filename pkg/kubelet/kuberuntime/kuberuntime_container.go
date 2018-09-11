@@ -183,6 +183,15 @@ func (m *kubeGenericRuntimeManager) startContainer(podSandboxID string, podSandb
 	return "", nil
 }
 
+func newContainerPrestartHooks(opts *kubecontainer.RunContainerOptions) []string {
+	var hooks []string
+	for _, hook := range opts.PrestartHooks {
+		hooks = append(hooks, string(hook))
+	}
+
+	return hooks
+}
+
 // generateContainerConfig generates container config for kubelet runtime v1.
 func (m *kubeGenericRuntimeManager) generateContainerConfig(container *v1.Container, pod *v1.Pod, restartCount int, podIP, imageRef string, containerType kubecontainer.ContainerType) (*runtimeapi.ContainerConfig, func(), error) {
 	opts, cleanupAction, err := m.runtimeHelper.GenerateRunContainerOptions(pod, container, podIP)
@@ -213,18 +222,19 @@ func (m *kubeGenericRuntimeManager) generateContainerConfig(container *v1.Contai
 			Name:    container.Name,
 			Attempt: restartCountUint32,
 		},
-		Image:       &runtimeapi.ImageSpec{Image: imageRef},
-		Command:     command,
-		Args:        args,
-		WorkingDir:  container.WorkingDir,
-		Labels:      newContainerLabels(container, pod, containerType),
-		Annotations: newContainerAnnotations(container, pod, restartCount, opts),
-		Devices:     makeDevices(opts),
-		Mounts:      m.makeMounts(opts, container),
-		LogPath:     containerLogsPath,
-		Stdin:       container.Stdin,
-		StdinOnce:   container.StdinOnce,
-		Tty:         container.TTY,
+		Image:         &runtimeapi.ImageSpec{Image: imageRef},
+		Command:       command,
+		Args:          args,
+		WorkingDir:    container.WorkingDir,
+		Labels:        newContainerLabels(container, pod, containerType),
+		Annotations:   newContainerAnnotations(container, pod, restartCount, opts),
+		Devices:       makeDevices(opts),
+		Mounts:        m.makeMounts(opts, container),
+		LogPath:       containerLogsPath,
+		Stdin:         container.Stdin,
+		StdinOnce:     container.StdinOnce,
+		Tty:           container.TTY,
+		PrestartHooks: newContainerPrestartHooks(opts),
 	}
 
 	// set platform specific configurations.

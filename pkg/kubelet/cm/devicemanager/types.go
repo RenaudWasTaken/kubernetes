@@ -66,6 +66,8 @@ type DeviceRunContainerOptions struct {
 	Devices []kubecontainer.DeviceInfo
 	// The Annotations for the container
 	Annotations []kubecontainer.Annotation
+	// The Pre-start hooks for the container
+	PrestartHooks []kubecontainer.PrestartHook
 }
 
 // TODO: evaluate whether we need these error definitions.
